@@ -7,6 +7,7 @@ const stripHtml = require("string-strip-html");
 const _ = require("lodash");
 const { errorHandler } = require("../helpers/dbErrorHandler");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 exports.create = (req, res) => {
   let form = new formidable.IncomingForm();
@@ -46,6 +47,7 @@ exports.create = (req, res) => {
 
     // console.log(body);
     let blog = new Blog();
+    // blog.categories = new mongoose.Types.ObjectId();
     blog.title = title;
     blog.body = body;
     blog.slug = slugify(title).toLowerCase();
@@ -61,7 +63,7 @@ exports.create = (req, res) => {
     let arrayOfTags = tags && tags.split(",");
 
     if (files.photo) {
-      //   console.log(files);
+      console.log(categories);
       if (files.photo.size > 10000000) {
         return res.status(400).json({
           error: "Image should be less then 1mb in size",
@@ -79,11 +81,11 @@ exports.create = (req, res) => {
         });
       }
       console.log(result._id);
-
+      console.log(mongoose.Types.ObjectId.isValid(result._id));
       //   res.json(result);
       Blog.findByIdAndUpdate(
         result._id,
-        // { $push: { categories: arrayOfCategories } },
+        { $push: { categories: arrayOfCategories } },
         { new: true }
       ).exec((err, result) => {
         console.log(err);
@@ -94,7 +96,7 @@ exports.create = (req, res) => {
         } else {
           Blog.findByIdAndUpdate(
             result._id,
-            // { $push: { tags: arrayOfTags } },
+            { $push: { tags: arrayOfTags } },
             { new: true }
           ).exec((err, result) => {
             if (err) {
