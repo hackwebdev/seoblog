@@ -7,7 +7,7 @@ const stripHtml = require("string-strip-html");
 const _ = require("lodash");
 const { errorHandler } = require("../helpers/dbErrorHandler");
 const fs = require("fs");
-const mongoose = require("mongoose");
+const { smartTrim } = require("../helpers/blog");
 
 exports.create = (req, res) => {
   let form = new formidable.IncomingForm();
@@ -18,7 +18,6 @@ exports.create = (req, res) => {
         error: "Image could not upload",
       });
     }
-    // console.log(files);
     const { title, body, categories, tags } = fields;
 
     if (!title || !title.length) {
@@ -47,19 +46,17 @@ exports.create = (req, res) => {
 
     // console.log(body);
     let blog = new Blog();
-    // blog.categories = new mongoose.Types.ObjectId();
     blog.title = title;
     blog.body = body;
+    blog.excerpt = smartTrim(body, 320, " ", " ...");
     blog.slug = slugify(title).toLowerCase();
     blog.mtitle = `${title} | ${process.env.APP_NAME}`;
     // fix tihs error undefined
     blog.mdesc = stripHtml(body.substring(0, 160)).result;
     blog.postedBy = req.auth._id;
-    // console.log(blog.mdesc);
 
     // categories and tags
     let arrayOfCategories = categories && categories.split(",");
-    // console.log(arrayOfCategories);
     let arrayOfTags = tags && tags.split(",");
 
     if (files.photo) {
@@ -74,15 +71,11 @@ exports.create = (req, res) => {
     }
 
     blog.save((err, result) => {
-      //   console.log(err);
       if (err) {
         return res.status(400).json({
           error: errorHandler(err),
         });
       }
-      console.log(result._id);
-      console.log(mongoose.Types.ObjectId.isValid(result._id));
-      //   res.json(result);
       Blog.findByIdAndUpdate(
         result._id,
         { $push: { categories: arrayOfCategories } },
